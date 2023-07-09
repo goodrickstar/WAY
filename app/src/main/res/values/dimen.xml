@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="default_padding">8dp</dimen>
+    <dimen name="title_text_size">28dp</dimen>
+    <dimen name="large_text_size">22dp</dimen>
+    <dimen name="medium_text_size">18dp</dimen>
+    <dimen name="small_text_size">14dp</dimen>
+    <dimen name="profile_picture_size">60dp</dimen>
+    <dimen name="button_size">35dp</dimen>
+    <dimen name="radius">7dp</dimen>
+</resources>

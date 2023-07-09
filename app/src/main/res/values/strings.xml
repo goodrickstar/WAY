@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Locations</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="notification_text">You are sharing your location</string>
+    <string name="connect_text">Sign in to connect with friends on Locations</string>
+    <string name="location_disabled">Sharing Disabled</string>
+    <string name="ok">OK</string>
+    <string name="name_example"><![CDATA[ex: Friends & Family]]></string>
+    <string name="add_user">+ADD USER</string>
+    <string name="user_search">Search for user</string>
+</resources>
