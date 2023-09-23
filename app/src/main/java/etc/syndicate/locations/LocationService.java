@@ -63,7 +63,7 @@ public class LocationService extends Service {
         circles = gson.fromJson(intent.getStringExtra("circles"), new TypeToken<List<Circle>>() {}.getType());
         createNotificationChannel();
         Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentText("Sharing your location")
                 .setSmallIcon(R.drawable.square_pin_w)

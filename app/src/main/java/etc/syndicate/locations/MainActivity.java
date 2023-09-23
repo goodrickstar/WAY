@@ -37,12 +37,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.request.RequestOptions;
-import com.cb3g.channel19.Logger;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -56,12 +50,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -82,13 +73,11 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
     private DatabaseReference databaseReference;
     private final recycler_adapter shortcutsAdapter = new recycler_adapter();
     private final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    private RequestOptions profileOptions = new RequestOptions().circleCrop();
-    private GoogleSignInClient mGoogleSignInClient;
+    private final RequestOptions profileOptions = new RequestOptions().circleCrop();
     private FusedLocationProviderClient fusedLocationProviderClient;
-    private LocationRequest locationRequest = new LocationRequest();
+    private final LocationRequest locationRequest = new LocationRequest();
     private final Map<String, String> STATE_MAP = new HashMap<>();
     private Locale locale;
-    private int GOOGLESIGNINTAG = 669;
     private Snackbar snackbar;
     private GoogleMap map;
     private FirebaseAuth mAuth;
@@ -96,20 +85,19 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
     private TextView userName, userLocation, mapLocation;
     private ConstraintLayout shelf, navBar;
     private SupportMapFragment mapFragment;
-    private ConstraintLayout intro;
     private SharedPreferences sharedPreferences;
-    private locationCallback locationCallback = new locationCallback();
+    private final locationCallback locationCallback = new locationCallback();
     private Position position;
     private boolean sharing = false;
     private User user;
     private ArrayList<Coordinates> users = new ArrayList<>();
-    private Gson gson = new Gson();
-    private List<Marker> markers = new ArrayList<>();
+    private final Gson gson = new Gson();
+    private final List<Marker> markers = new ArrayList<>();
     private String following;
     private boolean follow = true;
-    private ArrayList<Circle> circles = new ArrayList<>();
+    private final ArrayList<Circle> circles = new ArrayList<>();
     private int mapType = 0;
-    private ArrayList<UserNotification> notifications = new ArrayList<>();
+    private final ArrayList<UserNotification> notifications = new ArrayList<>();
     private CountDownTimer timerTask;
 
     @SuppressLint({"NonConstantResourceId", "NotifyDataSetChanged"})
@@ -150,12 +138,6 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
                     }
                 }
                 updateUi();
-                break;
-            case R.id.sign_in_button:
-                logInWithGoogle();
-                break;
-            case R.id.profilePhoto:
-                logOutWithGoogle();
                 break;
             case R.id.myLocation:
                 following = user.getUserId();
@@ -316,6 +298,7 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
 
     @Override
     public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {//Circles
+        if (map == null) return;
         String userId = dataSnapshot.getKey();
         if (userId.equals(user.getUserId())) return;
         Coordinates coordinates = dataSnapshot.getValue(Coordinates.class);
@@ -451,20 +434,6 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
         }
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == GOOGLESIGNINTAG) {
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            try {
-                GoogleSignInAccount account = task.getResult(ApiException.class);
-                firebaseAuthWithGoogle(account);
-            } catch (ApiException e) {
-                showSnack(new Snack("Google sign in failed", Snackbar.LENGTH_LONG));
-            }
-        }
-    }
-
     private boolean permissionGranted() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
@@ -483,52 +452,20 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
         }
     }
 
-    private void logInWithGoogle() {
-        startActivityForResult(mGoogleSignInClient.getSignInIntent(), GOOGLESIGNINTAG);
-    }
-
-    private void logOutWithGoogle() {
-        removeLocations();
-        authState(null);
-        stopSharing();
-        stopListening();
-        mAuth.signOut();
-        mGoogleSignInClient.signOut();
-        showSnack(new Snack("Logged Out", Snackbar.LENGTH_SHORT));
-    }
-
-    private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
-        AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
-        mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        showSnack(new Snack("Login succesful", Snackbar.LENGTH_SHORT));
-                        authState(mAuth.getCurrentUser());
-                        startListening();
-                    } else
-                        showSnack(new Snack("Firebase Authentification failed", Snackbar.LENGTH_LONG));
-                });
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity_layout);
         mAuth = FirebaseAuth.getInstance();
+        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+        user = new User(firebaseUser.getUid(), firebaseUser.getEmail(), firebaseUser.getDisplayName(), firebaseUser.getPhotoUrl().toString(), System.currentTimeMillis());
         databaseReference = Utils.getDatabase().getReference();
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
-                .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
         locale = Locale.getDefault();
-        signInButton = findViewById(R.id.sign_in_button);
         profilePhoto = findViewById(R.id.profilePhoto);
         shelf = findViewById(R.id.shelf);
         navBar = findViewById(R.id.nav_bar);
-        intro = findViewById(R.id.intro);
         userName = findViewById(R.id.userName);
         userLocation = findViewById(R.id.userLocation);
         mapLocation = findViewById(R.id.map_location);
@@ -557,7 +494,10 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
         RecyclerView shortcuts = findViewById(R.id.shortcuts);
         shortcuts.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         shortcuts.setAdapter(shortcutsAdapter);
-        authState(mAuth.getCurrentUser());
+        new GlideImageLoader(this, profilePhoto, findViewById(R.id.progressBar)).load(user.getPhotoUrl(), profileOptions);
+        userName.setText(user.getName());
+        userLocation.setText("");
+        databaseReference.child("users").child(user.getUserId()).setValue(user);
         updateUi();
     }
 
@@ -603,32 +543,6 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
     @Override
     public DatabaseReference database() {
         return databaseReference;
-    }
-
-    private void authState(FirebaseUser firebaseUser) {
-        if (firebaseUser == null) {
-            user = null;
-            signInButton.setOnClickListener(this);
-            mapFragment.getView().setVisibility(View.GONE);
-            intro.setVisibility(View.VISIBLE);
-            shelf.setVisibility(View.GONE);
-            navBar.setVisibility(View.GONE);
-            userName.setText("");
-            userLocation.setText("");
-            users.clear();
-            circles.clear();
-            shortcutsAdapter.notifyDataSetChanged();
-        } else {
-            user = new User(firebaseUser.getUid(), firebaseUser.getEmail(), firebaseUser.getDisplayName(), firebaseUser.getPhotoUrl().toString().replace("96", "400"), Instant.now().getEpochSecond());
-            new GlideImageLoader(this, profilePhoto, findViewById(R.id.progressBar)).load(user.getPhotoUrl(), profileOptions);
-            userName.setText(user.getName());
-            userLocation.setText("");
-            intro.setVisibility(View.GONE);
-            mapFragment.getView().setVisibility(View.VISIBLE);
-            shelf.setVisibility(View.VISIBLE);
-            navBar.setVisibility(View.VISIBLE);
-            databaseReference.child("users").child(user.getUserId()).setValue(user);
-        }
     }
 
     private void startListening() {
@@ -708,7 +622,7 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
+    public void onMapReady(@NonNull GoogleMap googleMap) {
         map = googleMap;
         setMapType(mapType);
         map.setIndoorEnabled(true);
@@ -768,7 +682,7 @@ public class MainActivity extends FragmentActivity implements MI, ValueEventList
     }
 
     public void showSnack(Snack snack) {
-        snackbar = Snackbar.make(findViewById(R.id.coordinator), snack.getMessage(), snack.getLength());
+        snackbar = Snackbar.make(findViewById(R.id.coordinator), snack.getMessage(), Snackbar.LENGTH_SHORT);
         View view = snackbar.getView();
         TextView tv = view.findViewById(com.google.android.material.R.id.snackbar_text);
         tv.setTextColor(ContextCompat.getColor(this, R.color.colorAccent));

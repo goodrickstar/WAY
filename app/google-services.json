@@ -15,36 +15,28 @@
       },
       "oauth_client": [
         {
-          "client_id": "810058330828-5egfeqg4cdie3nq6sts0rtdi7omk2ff0.apps.googleusercontent.com",
+          "client_id": "810058330828-jc9707id9edrrc98jaf8givqi5fhknq6.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "etc.syndicate.locations",
-            "certificate_hash": "97a2bb745065d821171b94739b1f0b60bdb78b54"
+            "certificate_hash": "29fb2fd7e5840f988746addfd2c45cb27d944501"
           }
         },
         {
-          "client_id": "810058330828-ip5kh1mc2b4cu8is5575flev0m6modcq.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "etc.syndicate.locations",
-            "certificate_hash": "d75d3e53957876651815384b778b03999b3fd2cc"
-          }
-        },
-        {
-          "client_id": "810058330828-phbv70f5ioff3n98i0og7q66nfj2qomf.apps.googleusercontent.com",
+          "client_id": "810058330828-kv3c6p4ju449t2ojjrkvcmtse52rrr58.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDZ-zGsUutuQnShy1sZj0qj8dmzUjlW5Bc"
+          "current_key": "AIzaSyAyQgfWM-guQak4gAwiDVaZkoY8q4Qi7Qw"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "810058330828-phbv70f5ioff3n98i0og7q66nfj2qomf.apps.googleusercontent.com",
+              "client_id": "810058330828-kv3c6p4ju449t2ojjrkvcmtse52rrr58.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

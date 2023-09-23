@@ -1,4 +1,6 @@
-package com.cb3g.channel19
+package etc.syndicate.locations
+
+import android.util.Log
 
 object Logger {
     fun e(msg: String) {
@@ -9,11 +11,11 @@ object Logger {
     }
 
     fun i(msg: String) {
-        println("I: !! $msg")
+        Log.i("WAY", msg)
     }
 
     fun i(tag: String, text: String) {
-        println("I: !! $tag : $text")
+        Log.i(tag, text)
     }
 
     fun i(stamp: String, stamp1: Long) {
