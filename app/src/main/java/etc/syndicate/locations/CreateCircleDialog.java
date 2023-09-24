@@ -3,6 +3,7 @@ package etc.syndicate.locations;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,7 +37,7 @@ public class CreateCircleDialog extends DialogFragment implements View.OnClickLi
 
     @Override
     public void onClick(View view) {
-        if (MI != null) MI.vibrate();
+        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
         Utils.hideKeyboard(context, channelNameEdittext);
         switch (view.getId()) {
             case R.id.search_button:

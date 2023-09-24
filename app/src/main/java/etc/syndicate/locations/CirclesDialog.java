@@ -3,6 +3,7 @@ package etc.syndicate.locations;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,7 +70,7 @@ public class CirclesDialog extends DialogFragment implements View.OnClickListene
 
     @Override
     public void onClick(View view) {
-        if (MI != null) MI.vibrate();
+        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
         switch (view.getId()) {
             case R.id.invite:
                 if (MI != null) MI.invite(usersAdapter.getCircle());
@@ -229,7 +230,7 @@ public class CirclesDialog extends DialogFragment implements View.OnClickListene
 
         @Override
         public void onClick(View view) {
-            if (MI != null) MI.vibrate();
+            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
             showCircle((Circle) view.getTag());
         }
 

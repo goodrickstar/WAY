@@ -3,6 +3,7 @@ package etc.syndicate.locations;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,10 +55,10 @@ public class InviteUser extends DialogFragment implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
+        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
         switch (view.getId()) {
             case R.id.close:
                 if (MI != null) {
-                    MI.vibrate();
                     MI.showCirclesDialog(0, null);
                 }
                 dismiss();
@@ -91,7 +92,7 @@ public class InviteUser extends DialogFragment implements View.OnClickListener {
         searchBox.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                if (MI != null) MI.vibrate();
+                //if (MI != null) MI.vibrate();
                 search(query);
                 return false;
             }
@@ -148,7 +149,7 @@ public class InviteUser extends DialogFragment implements View.OnClickListener {
 
         @Override
         public void onClick(View view) {
-            if (MI != null) MI.vibrate();
+            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
         }
 
         @NonNull

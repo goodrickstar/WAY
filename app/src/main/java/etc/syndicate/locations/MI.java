@@ -9,8 +9,6 @@ interface MI {
 
     DatabaseReference database();
 
-    void vibrate();
-
     void showCirclesDialog(int mode, Circle circle);
 
     void showNewCircleDialog();

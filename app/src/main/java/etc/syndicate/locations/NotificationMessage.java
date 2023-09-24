@@ -2,6 +2,7 @@ package etc.syndicate.locations;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,9 +44,9 @@ public class NotificationMessage extends DialogFragment {
         title.setText(notification.getTitle());
         new GlideImageLoader(context, profile, view.findViewById(R.id.progressBar)).load(notification.getUser().getPhotoUrl());
         content.setText(notification.getExtra());
-        accept.setOnClickListener(view1 -> {
+        accept.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
             if (MI != null) {
-                MI.vibrate();
                 MI.deleteNotification(notification);
             }
             dismiss();
