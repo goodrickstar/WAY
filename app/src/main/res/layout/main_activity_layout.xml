@@ -13,14 +13,38 @@
         android:layout_height="0dp"
         app:layout_constraintBottom_toTopOf="@+id/nav_bar"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shelf">
+        app:layout_constraintTop_toBottomOf="@+id/shelf"
+        app:layout_constraintVertical_bias="0.0">
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/map"
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toTopOf="@+id/nav_bar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/shelf"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <TextView
+            android:id="@+id/map_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:background="#000"
+            android:gravity="center"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp"
+            android:textColor="#fff"
+            android:textSize="@dimen/small_text_size"
+            android:visibility="invisible" />
+
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
@@ -31,6 +55,7 @@
         android:layout_height="wrap_content"
         android:background="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -69,12 +94,12 @@
 
         <TextView
             android:id="@+id/userLocation"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textColor="@color/colorAccent"
-            android:textSize="@dimen/medium_text_size"
-            app:layout_constraintStart_toEndOf="@+id/profilePhoto"
+            android:textColor="#fff"
+            android:textSize="@dimen/small_text_size"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/userName"
             app:layout_constraintTop_toBottomOf="@+id/userName" />
 
         <TextView
@@ -90,79 +115,49 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:id="@+id/nav_bar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@android:color/black"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
-
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guideline"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.2" />
-
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guideline3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.6" />
-
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guideline4"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.8" />
-
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guideline2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.4" />
 
         <ImageView
             android:id="@+id/layers_button"
             android:layout_width="@dimen/button_size"
             android:layout_height="@dimen/button_size"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:maxHeight="@dimen/button_size"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:layout_weight="1"
             android:src="@drawable/layers_w"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/guideline4"
-            app:layout_constraintStart_toStartOf="@+id/guideline3"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_editor_absoluteX="270dp" />
 
         <ImageView
             android:id="@+id/follow_button"
             android:layout_width="@dimen/button_size"
             android:layout_height="@dimen/button_size"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:maxHeight="@dimen/button_size"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:layout_weight="1"
             android:src="@drawable/follow_no"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/guideline3"
-            app:layout_constraintStart_toStartOf="@+id/guideline2"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_editor_absoluteX="188dp" />
 
         <ImageView
             android:id="@+id/circles_button"
             android:layout_width="@dimen/button_size"
             android:layout_height="@dimen/button_size"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:maxHeight="@dimen/button_size"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:layout_weight="1"
             android:src="@drawable/circles_w"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/guideline"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -170,43 +165,26 @@
             android:id="@+id/notifications_button"
             android:layout_width="@dimen/button_size"
             android:layout_height="@dimen/button_size"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:maxHeight="@dimen/button_size"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:layout_weight="1"
             android:src="@drawable/notifications_w"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/guideline2"
-            app:layout_constraintStart_toStartOf="@+id/guideline"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_editor_absoluteX="106dp" />
 
         <ImageView
             android:id="@+id/settings_button"
             android:layout_width="@dimen/button_size"
             android:layout_height="@dimen/button_size"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:maxHeight="@dimen/button_size"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:layout_weight="1"
             android:src="@drawable/settings_w"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="@+id/guideline4"
             app:layout_constraintTop_toTopOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <TextView
-        android:id="@+id/map_location"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@android:color/black"
-        android:paddingStart="8dp"
-        android:paddingTop="4dp"
-        android:paddingEnd="8dp"
-        android:paddingBottom="4dp"
-        android:textColor="@color/colorAccent"
-        android:textSize="@dimen/medium_text_size"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/nav_bar"
-        app:layout_constraintStart_toStartOf="parent" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/shortcuts"

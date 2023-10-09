@@ -27,6 +27,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.coroutineScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.request.RequestOptions
@@ -43,7 +44,6 @@ import com.google.android.gms.maps.GoogleMap.OnCameraMoveListener
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -54,9 +54,14 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import etc.syndicate.locations.MainActivity.ShortcutAdapter.MyViewHolder
 import etc.syndicate.locations.databinding.MainActivityLayoutBinding
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @SuppressLint("NotifyDataSetChanged")
@@ -70,7 +75,10 @@ class MainActivity : FragmentActivity(),
     OnMarkerClickListener,
     OnCameraMoveListener {
 
+    private lateinit var contactsListener: ListenerRegistration
     private var user: User = User()
+    private var userLocation : LatLong? = null
+    private val contacts : ArrayList<User> = ArrayList()
     private lateinit var binding: MainActivityLayoutBinding
     private lateinit var databaseReference: DatabaseReference
     private lateinit var sharedPreferences: SharedPreferences
@@ -83,8 +91,7 @@ class MainActivity : FragmentActivity(),
     private lateinit var locationRequest: LocationRequest
     private val shortcutsAdapter = ShortcutAdapter()
     private val profileOptions = RequestOptions().circleCrop()
-    private val stateMap: MutableMap<String, String> = HashMap()
-    private var position: Position = Position(40.7128, 74.0060, 17.787579f)
+    private var cameraPosition: Position = Position(40.7128, -73.935242, 17.787579f)
     private var sharing = false
     private val gson = Gson()
     private var following: String = ""
@@ -94,12 +101,13 @@ class MainActivity : FragmentActivity(),
     private val circles = ArrayList<Circle>()
     private val users = ArrayList<Coordinates>()
     private val notifications = ArrayList<UserNotification>()
-    private lateinit var cameraPosition :CameraPosition
+    private lateinit var database : FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = MainActivityLayoutBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        database = Firebase.firestore
         FirebaseAuth.getInstance().currentUser?.let {
             user.userId = it.uid
             user.name = it.displayName
@@ -113,7 +121,7 @@ class MainActivity : FragmentActivity(),
         sharedPreferences = getSharedPreferences("settings", MODE_PRIVATE)
         sharing = sharedPreferences.getBoolean("sharing", false) && permissionGranted()
         follow = sharedPreferences.getBoolean("follow", false)
-        position = gson.fromJson(
+        cameraPosition = gson.fromJson(
             sharedPreferences.getString(
                 "position",
                 gson.toJson(Position(40.7128, 74.0060, 17.787579f))
@@ -123,8 +131,7 @@ class MainActivity : FragmentActivity(),
         sharedPreferences.getString("maptype", MapType.NORMAL.name)?.let {
             mapType = MapType.valueOf(it)
         }
-        stateMap.putAll(createStateShorts())
-        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000).build()
+        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 0).build()
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         binding.sharingIcon.setOnClickListener(this)
         binding.profilePhoto.setOnClickListener(this)
@@ -149,17 +156,27 @@ class MainActivity : FragmentActivity(),
                 super.onLocationResult(result)
                 if (result.locations.isNotEmpty() && circles.isNotEmpty()) {
                     for (location in result.locations) {
-                        location.log()
-                        if (location.hasAccuracy()){
-                            locationLabel(location)
-                            for (circle in circles) {
-                                "Location updated to circle ${circle.name}".log()
-                                databaseReference.child("locations").child(circle.id).child(user.userId).setValue(location.coordinates())
-                            }
-                        }
+                        userLocation = LatLong(location.latitude, location.longitude)
+                        locationLabel(location.latitude, location.longitude, binding.userLocation)
+                        //TODO: share location
                     }
                 }
             }
+        }
+        contactsListener = database.collection(user.userId).document("contacts").addSnapshotListener{ snapshot, e ->
+            if (e != null) {
+                "Firestore Failure!".log()
+                return@addSnapshotListener
+            }
+            snapshot?.let {
+                if (it.exists()) {
+                    Gson().toJson(it.data).log()
+
+                } else {
+                    "No Data!".log()
+                }
+            }
+
         }
     }
 
@@ -189,10 +206,11 @@ class MainActivity : FragmentActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
-        sharedPreferences.edit().putString("position", gson.toJson(position)).apply()
+        sharedPreferences.edit().putString("position", gson.toJson(cameraPosition)).apply()
         sharedPreferences.edit().putBoolean("sharing", sharing).apply()
         sharedPreferences.edit().putBoolean("follow", follow).apply()
         sharedPreferences.edit().putString("following", following).apply()
+        contactsListener.remove()
     }
 
     override fun moveCamera(lattitude: Double, longitude: Double, zoom: Float) {
@@ -200,9 +218,10 @@ class MainActivity : FragmentActivity(),
     }
 
     override fun onCameraIdle() {
-        position.latitude = map.cameraPosition.target.latitude
-        position.longitude = map.cameraPosition.target.longitude
-        position.zoom = map.cameraPosition.zoom
+        cameraPosition.latitude = map.cameraPosition.target.latitude
+        cameraPosition.longitude = map.cameraPosition.target.longitude
+        cameraPosition.zoom = map.cameraPosition.zoom
+        locationLabel(cameraPosition.latitude, cameraPosition.longitude, binding.mapLocation)
     }
 
     override fun onCameraMove() {}
@@ -231,15 +250,16 @@ class MainActivity : FragmentActivity(),
             val index = indexOfUsers(following)
             if (index != -1) {
                 val user = users[index]
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(user.latitude, user.longitude), position.zoom))
-            } else map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(position.latitude, position.longitude), position.zoom))
-        } else map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(position.latitude, position.longitude), position.zoom))
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(user.latitude, user.longitude), cameraPosition.zoom))
+            } else map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(cameraPosition.latitude, cameraPosition.longitude), cameraPosition.zoom))
+        } else map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(cameraPosition.latitude, cameraPosition.longitude), cameraPosition.zoom))
     }
 
     override fun onClick(view: View) {
         view.vibrate()
         when (view.id) {
             R.id.circles_button -> showCirclesDialog(0, null)
+
             R.id.sharingIcon -> if (!sharing) {
                 if (permissionGranted()) {
                     showSnack(Snack("Location sharing ON", Snackbar.LENGTH_SHORT))
@@ -267,7 +287,7 @@ class MainActivity : FragmentActivity(),
                             moveCamera(
                                 marker.position.latitude,
                                 marker.position.longitude,
-                                position.zoom
+                                cameraPosition.zoom
                             )
                         }
                     }
@@ -293,7 +313,7 @@ class MainActivity : FragmentActivity(),
                         moveCamera(
                             location.latitude,
                             location.longitude,
-                            position.zoom
+                            cameraPosition.zoom
                         )
                     }
                 }
@@ -310,6 +330,10 @@ class MainActivity : FragmentActivity(),
                     MapType.NORMAL -> showSnack(Snack("Map set to NORMAL", Snackbar.LENGTH_SHORT))
                     MapType.HYBRID -> showSnack(Snack("Map set to HYBRID", Snackbar.LENGTH_SHORT))
                 }
+            }
+
+            R.id.profilePhoto -> {
+                userLocation?.let { moveCamera(lattitude = userLocation!!.lattitude, longitude = userLocation!!.longitude, zoom = cameraPosition.zoom) }
             }
         }
     }
@@ -454,7 +478,6 @@ class MainActivity : FragmentActivity(),
     }
 
     override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) { //Circles
-        if (dataSnapshot.key == user.userId) return
         dataSnapshot.getValue(Coordinates::class.java)?.let { coordinates ->
             if (indexOfMarkers(dataSnapshot.key) == -1) {
                 with(
@@ -477,14 +500,13 @@ class MainActivity : FragmentActivity(),
                 }
             }
             if (indexOfUsers(dataSnapshot.key) == -1) {
-                users.add(coordinates)
                 shortcutsAdapter.notifyItemInserted(indexOfUsers(coordinates.user.userId))
             }
             if (following.isNotEmpty()) {
                 if (dataSnapshot.key == following) {
-                    moveCamera(coordinates.latitude, coordinates.longitude, position.zoom)
-                    position.latitude = coordinates.latitude
-                    position.longitude = coordinates.longitude
+                    moveCamera(coordinates.latitude, coordinates.longitude, cameraPosition.zoom)
+                    cameraPosition.latitude = coordinates.latitude
+                    cameraPosition.longitude = coordinates.longitude
                 }
             }
         }
@@ -526,9 +548,9 @@ class MainActivity : FragmentActivity(),
                 users[userIndex] = coordinates
                 if (following.isNotEmpty() && follow) {
                     if (dataSnapshot.key == following) {
-                        moveCamera(coordinates.latitude, coordinates.longitude, position.zoom)
-                        position.latitude = coordinates.latitude
-                        position.longitude = coordinates.longitude
+                        moveCamera(coordinates.latitude, coordinates.longitude, cameraPosition.zoom)
+                        cameraPosition.latitude = coordinates.latitude
+                        cameraPosition.longitude = coordinates.longitude
                     }
                 }
             }
@@ -563,21 +585,7 @@ class MainActivity : FragmentActivity(),
 
     private fun startSharing() {
         if (this.permissionGranted()) {
-            fusedLocationProviderClient.requestLocationUpdates(locationRequest, object : LocationCallback(){
-                override fun onLocationResult(result: LocationResult) {
-                    super.onLocationResult(result)
-                    if (result.locations.isNotEmpty() && circles.isNotEmpty()) {
-                        for (location in result.locations) {
-                            location.log()
-                            locationLabel(location)
-                            for (circle in circles) {
-                                "Location updated to circle ${circle.name}".log()
-                                databaseReference.child("locations").child(circle.id).child(user.userId).setValue(location.coordinates())
-                            }
-                        }
-                    }
-                }
-            }, Looper.getMainLooper())
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
             updateUi()
         }
     }
@@ -744,7 +752,8 @@ class MainActivity : FragmentActivity(),
         val view = snackbar.view
         val tv = view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)
         tv.setTextColor(ContextCompat.getColor(this, R.color.colorAccent))
-        view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
+        tv.setBackgroundColor(ContextCompat.getColor(this, R.color.black))
+        view.setBackgroundColor(ContextCompat.getColor(this, R.color.black))
         if (snack.length == Snackbar.LENGTH_INDEFINITE) {
             snackbar.setActionTextColor(Color.WHITE)
             snackbar.setAction("10 4") { v: View ->
@@ -755,99 +764,22 @@ class MainActivity : FragmentActivity(),
         snackbar.show()
     }
 
-    @SuppressLint("NewApi")
-    private fun locationLabel(location: Location) {
-        val geoCoder = Geocoder(this@MainActivity, locale)
-        geoCoder.getFromLocation(location.latitude, location.longitude, 1) { addresses ->
-            for (address in addresses) {
-                val city = address.locality
-                val state = address.adminArea
-                if (address.countryCode != null) {
-                    if (city != null && state != null) {
-                        if (address.countryCode == "US") binding.mapLocation.text =
-                            city.trim { it <= ' ' } + ", " + getAbbreviationFromUSState(state)
-                        else binding.mapLocation.text =
-                            address.locality + ", " + address.countryCode
+    private fun locationLabel(lattitude: Double, longitude: Double, view: TextView) {
+        lifecycle.coroutineScope.launch {
+            Geocoder(this@MainActivity, locale).getAddress(lattitude, longitude)?.let {
+                with(it){
+                    try {
+                        if (locality != null && adminArea != null)
+                            view.text = locality + ", " + State.valueOf(adminArea).abbreviation
+                        else if (adminArea != null) view.text = State.valueOf(adminArea).abbreviation
+                    }catch (e : IllegalArgumentException){
+                        view.text = ""
                     }
+                    view.visibility = View.VISIBLE
                 }
+
             }
         }
-    }
-
-    private fun getAbbreviationFromUSState(state: String): String? {
-        return if (stateMap.containsKey(state)) stateMap[state] else state
-    }
-
-    private fun createStateShorts(): Map<String, String> {
-        val map: MutableMap<String, String> = HashMap()
-        map["Alabama"] = "AL"
-        map["Alaska"] = "AK"
-        map["Alberta"] = "AB"
-        map["Arizona"] = "AZ"
-        map["Arkansas"] = "AR"
-        map["British Columbia"] = "BC"
-        map["California"] = "CA"
-        map["Colorado"] = "CO"
-        map["Connecticut"] = "CT"
-        map["Delaware"] = "DE"
-        map["District of Columbia"] = "DC"
-        map["Florida"] = "FL"
-        map["Georgia"] = "GA"
-        map["Guam"] = "GU"
-        map["Hawaii"] = "HI"
-        map["Idaho"] = "ID"
-        map["Illinois"] = "IL"
-        map["Indiana"] = "IN"
-        map["Iowa"] = "IA"
-        map["Kansas"] = "KS"
-        map["Kentucky"] = "KY"
-        map["Louisiana"] = "LA"
-        map["Maine"] = "ME"
-        map["Manitoba"] = "MB"
-        map["Maryland"] = "MD"
-        map["Massachusetts"] = "MA"
-        map["Michigan"] = "MI"
-        map["Minnesota"] = "MN"
-        map["Mississippi"] = "MS"
-        map["Missouri"] = "MO"
-        map["Montana"] = "MT"
-        map["Nebraska"] = "NE"
-        map["Nevada"] = "NV"
-        map["New Brunswick"] = "NB"
-        map["New Hampshire"] = "NH"
-        map["New Jersey"] = "NJ"
-        map["New Mexico"] = "NM"
-        map["New York"] = "NY"
-        map["Newfoundland"] = "NF"
-        map["North Carolina"] = "NC"
-        map["North Dakota"] = "ND"
-        map["Northwest Territories"] = "NT"
-        map["Nova Scotia"] = "NS"
-        map["Nunavut"] = "NU"
-        map["Ohio"] = "OH"
-        map["Oklahoma"] = "OK"
-        map["Ontario"] = "ON"
-        map["Oregon"] = "OR"
-        map["Pennsylvania"] = "PA"
-        map["Prince Edward Island"] = "PE"
-        map["Puerto Rico"] = "PR"
-        map["Quebec"] = "QC"
-        map["Rhode Island"] = "RI"
-        map["Saskatchewan"] = "SK"
-        map["South Carolina"] = "SC"
-        map["South Dakota"] = "SD"
-        map["Tennessee"] = "TN"
-        map["Texas"] = "TX"
-        map["Utah"] = "UT"
-        map["Vermont"] = "VT"
-        map["Virgin Islands"] = "VI"
-        map["Virginia"] = "VA"
-        map["Washington"] = "WA"
-        map["West Virginia"] = "WV"
-        map["Wisconsin"] = "WI"
-        map["Wyoming"] = "WY"
-        map["Yukon Territory"] = "YT"
-        return map
     }
 
     internal inner class ShortcutAdapter : RecyclerView.Adapter<MyViewHolder?>(),
@@ -861,9 +793,9 @@ class MainActivity : FragmentActivity(),
             if (markerIndex != -1) {
                 if (markers[markerIndex].isInfoWindowShown) markers[markerIndex].hideInfoWindow()
             }
-            moveCamera(coordinates.latitude, coordinates.longitude, position.zoom)
-            position.latitude = coordinates.latitude
-            position.longitude = coordinates.longitude
+            moveCamera(coordinates.latitude, coordinates.longitude, cameraPosition.zoom)
+            cameraPosition.latitude = coordinates.latitude
+            cameraPosition.longitude = coordinates.longitude
             for (x in users.indices) {
                 users[x].checked = users[x].user.userId == following
             }
